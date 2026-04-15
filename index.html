@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>Attendance record </title>
+    
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Jamia Attendance · Asad Ahmad</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f1f5f9;
+            color: #0f172a;
+            overflow-x: hidden;
+        }
+
+        /* ---------- SPLASH SCREEN ---------- */
+        #splash {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #050505; /* deep black as original */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.8s ease;
+        }
+
+        #splash.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #splashCanvas {
+            width: min(85vw, 85vh, 400px);
+            height: min(85vw, 85vh, 400px);
+            display: block;
+            background: transparent;
+        }
+
+        #splashText {
+            margin-top: 30px;
+            font-size: clamp(20px, 6vw, 32px);
+            font-weight: 900;
+            letter-spacing: 3px;
+            white-space: nowrap;
+            border-right: 5px solid white;
+            padding-right: 8px;
+            min-height: 40px;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
+            color: white;
+            font-family: 'Courier New', monospace;
+            animation: blink 0.7s step-end infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { border-color: transparent; }
+            50% { border-color: white; }
+        }
+
+        /* ---------- MAIN APP (Hidden initially) ---------- */
+        #app {
+            display: none;
+            padding: 20px;
+        }
+
+        #app.visible {
+            display: block;
+        }
+
+        .container {
+            max-width: 780px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 32px;
+            padding: 28px 24px;
+            box-shadow: 0 20px 35px -8px rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.02);
+        }
+
+        /* Logo Header inside app (small) */
+        .logo-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .logo-canvas-box {
+            flex-shrink: 0;
+            width: 100px;
+            height: 100px;
+        }
+
+        #appLogoCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            background: transparent;
+        }
+
+        h1 {
+            font-size: 26px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 6px;
+        }
+
+        .subhead {
+            color: #64748b;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .badge {
+            background: #1e293b;
+            color: white;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* Name entry bar */
+        .name-bar {
+            background: #f8fafc;
+            border-radius: 60px;
+            padding: 6px 6px 6px 24px;
+            margin-bottom: 28px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            border: 1px solid #e2e8f0;
+        }
+
+        .name-bar label {
+            font-weight: 500;
+            color: #334155;
+        }
+
+        .name-bar input {
+            flex: 2;
+            border: none;
+            background: transparent;
+            padding: 12px 0;
+            font-weight: 500;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .name-bar button {
+            background: #1e293b;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .active-user {
+            margin-left: auto;
+            font-weight: 600;
+            color: #0d9488;
+        }
+
+        /* Date bar */
+        .date-bar {
+            background: white;
+            border-radius: 60px;
+            padding: 6px 6px 6px 24px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .date-bar input {
+            border: none;
+            background: transparent;
+            padding: 12px 0;
+            font-weight: 500;
+            flex: 1;
+            outline: none;
+        }
+
+        button.secondary {
+            background: white;
+            color: #1e293b;
+            border: 1px solid #cbd5e1;
+        }
+
+        button.success { background: #0d9488; color: white; border: none; }
+        button.danger { background: #dc2626; color: white; border: none; }
+
+        /* Period grid */
+        .period-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin: 20px 0 28px;
+        }
+
+        .period-card {
+            background: #f9fafb;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            padding: 16px 8px 14px;
+            text-align: center;
+        }
+
+        .period-name { font-weight: 600; font-size: 15px; }
+        .period-desc { font-size: 12px; color: #64748b; margin-bottom: 12px; }
+        .att-check { transform: scale(1.25); accent-color: #0d9488; }
+
+        /* Stats */
+        .stats-panel {
+            background: #f0fdf4;
+            border-radius: 24px;
+            padding: 24px;
+            margin: 24px 0;
+            border: 1px solid #bbf7d0;
+        }
+
+        .subject-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #d1fae5;
+        }
+
+        .warning-pill {
+            background: #fee2e2;
+            color: #b91c1c;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* History */
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 16px;
+        }
+
+        .history-table th {
+            background: #f8fafc;
+            padding: 14px 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .history-table td { padding: 12px; border-bottom: 1px solid #e2e8f0; }
+
+        .footer {
+            margin-top: 32px;
+            text-align: center;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 24px;
+        }
+
+        @media (max-width: 550px) {
+            .period-grid { grid-template-columns: repeat(2, 1fr); }
+            .name-bar { flex-direction: column; align-items: stretch; }
+            .logo-header { flex-direction: column; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- SPLASH SCREEN (Full Screen) -->
+<div id="splash">
+    <canvas id="splashCanvas"></canvas>
+    <div id="splashText"></div>
+</div>
+
+<!-- MAIN APP (Initially hidden) -->
+<div id="app">
+    <div class="container">
+        <!-- Small Logo + Credit inside app (static) -->
+        <div class="logo-header">
+            <div class="logo-canvas-box">
+                <canvas id="appLogoCanvas" width="200" height="200" style="width:100%; height:auto; aspect-ratio:1/1;"></canvas>
+            </div>
+            <div style="flex:1;">
+                <div style="font-weight: 700; font-size: 22px; letter-spacing: 1px;">Asad Ahmad</div>
+                <div style="font-size: 14px; color: #64748b; display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                    <span>📸 _a4asd__</span>
+                    <span style="background: #eef2ff; padding: 2px 8px; border-radius: 20px; font-family: monospace;">Jamia Salafiya</span>
+                </div>
+            </div>
+        </div>
+
+        <h1>
+            📘 Jamia Salafiya
+            <span style="font-size: 16px; font-weight: normal; margin-left: auto;">Varanasi</span>
+        </h1>
+        <div class="subhead">
+            <span>Mutawassita · Year 3 · 8 Periods</span>
+            <span class="badge">85% Minimum Required</span>
+        </div>
+
+        <!-- Name Entry -->
+        <div class="name-bar">
+            <label>👤 Your Name</label>
+            <input type="text" id="studentNameInput" placeholder="Enter your name" value="">
+            <button id="loadNameBtn">Load / Switch</button>
+            <span class="active-user" id="currentUserDisplay"></span>
+        </div>
+
+        <!-- Date Controls -->
+        <div class="date-bar">
+            <label>📅 Date</label>
+            <input type="date" id="attendanceDate">
+            <button id="todayBtn" class="secondary">Today</button>
+            <button id="loadDateBtn">Load</button>
+        </div>
+
+        <h3 style="margin-bottom: 8px;">📖 Mark Attendance</h3>
+        <div class="period-grid" id="periodGrid"></div>
+
+        <div style="display: flex; gap: 14px; margin-bottom: 28px;">
+            <button id="saveBtn" class="success" style="flex:2;">💾 Save Today's Attendance</button>
+            <button id="deleteDayBtn" class="danger" style="flex:1;">🗑️ Delete This Day</button>
+        </div>
+
+        <!-- Statistics -->
+        <div class="stats-panel">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+                <h3>📊 Subject‑wise Attendance</h3>
+                <span style="color:#475569;">Required ≥85%</span>
+            </div>
+            <div id="subjectStats">Enter your name to see statistics.</div>
+        </div>
+
+        <!-- History & Backup -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin: 16px 0;">
+            <h3>📋 Recent Records</h3>
+            <div>
+                <button id="exportDataBtn" class="secondary">📤 Export Backup</button>
+                <button id="importDataBtn" class="secondary">📥 Import</button>
+                <input type="file" id="importFile" accept=".json" style="display:none;">
+            </div>
+        </div>
+        <table class="history-table">
+            <thead><tr><th>Date</th><th>Absent Periods</th><th>Action</th></tr></thead>
+            <tbody id="historyBody"></tbody>
+        </table>
+
+        <div class="footer">
+            <div style="background: #f1f5f9; padding: 8px 20px; border-radius: 40px; display: inline-block;">
+                ⚡ Digital Attendance Register · Data stored locally
+            </div>
+            <div style="margin-top: 12px;">Export regularly as proof against fine discrepancies.</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function(){
+        "use strict";
+
+        // ---------- SPLASH SCREEN ANIMATION ----------
+        const splash = document.getElementById('splash');
+        const splashCanvas = document.getElementById('splashCanvas');
+        const splashText = document.getElementById('splashText');
+        const appDiv = document.getElementById('app');
+
+        // Set canvas size based on container
+        function resizeSplashCanvas() {
+            const containerSize = Math.min(window.innerWidth * 0.85, window.innerHeight * 0.85, 400);
+            splashCanvas.width = containerSize;
+            splashCanvas.height = containerSize;
+        }
+        window.addEventListener('resize', resizeSplashCanvas);
+        resizeSplashCanvas();
+
+        const ctxSplash = splashCanvas.getContext('2d');
+        let centerX, centerY, radius, points = [];
+
+        function initSplashPoints() {
+            const size = splashCanvas.width;
+            centerX = size/2;
+            centerY = size/2;
+            radius = size * 0.3;
+            points = [];
+            for (let i = 0; i < 5; i++) {
+                let angle = (Math.PI * 2 / 5) * i - Math.PI / 2;
+                let x = Math.round(centerX + radius * Math.cos(angle));
+                let y = Math.round(centerY + radius * Math.sin(angle));
+                points.push({ x, y });
+            }
+        }
+
+        let dotsVisible = 0;
+        let linesVisible = 0;
+        const order = [0, 2, 4, 1, 3, 0];
+        let lineProgress = 0;
+        let isStarComplete = false;
+        let typingInterval = null;
+        let animationFrame = null;
+
+        function drawSplashDots() {
+            ctxSplash.shadowBlur = 15;
+            ctxSplash.shadowColor = "white";
+            ctxSplash.fillStyle = "white";
+            for (let i = 0; i < dotsVisible; i++) {
+                let p = points[i];
+                ctxSplash.beginPath();
+                ctxSplash.arc(p.x, p.y, 8, 0, Math.PI * 2);
+                ctxSplash.fill();
+            }
+        }
+
+        function drawSplashLines() {
+            ctxSplash.strokeStyle = "white";
+            ctxSplash.lineWidth = 4;
+            ctxSplash.lineCap = "round";
+            ctxSplash.lineJoin = "round";
+            ctxSplash.shadowBlur = 12;
+            ctxSplash.shadowColor = "white";
+
+            ctxSplash.beginPath();
+            if (linesVisible > 0) {
+                ctxSplash.moveTo(points[order[0]].x, points[order[0]].y);
+                for (let i = 0; i < linesVisible; i++) {
+                    ctxSplash.lineTo(points[order[i + 1]].x, points[order[i + 1]].y);
+                }
+            }
+            ctxSplash.stroke();
+
+            if (linesVisible < 5 && dotsVisible === 5) {
+                let p1 = points[order[linesVisible]];
+                let p2 = points[order[linesVisible + 1]];
+                let currentX = p1.x + (p2.x - p1.x) * lineProgress;
+                let currentY = p1.y + (p2.y - p1.y) * lineProgress;
+                ctxSplash.beginPath();
+                ctxSplash.moveTo(p1.x, p1.y);
+                ctxSplash.lineTo(currentX, currentY);
+                ctxSplash.stroke();
+                lineProgress += 0.03;
+                if (lineProgress >= 1) {
+                    lineProgress = 0;
+                    linesVisible++;
+                    if (linesVisible === 5) {
+                        isStarComplete = true;
+                        startTypingAndTransition();
+                    }
+                }
+            }
+        }
+
+        function animateSplash() {
+            ctxSplash.clearRect(0, 0, splashCanvas.width, splashCanvas.height);
+            drawSplashDots();
+            drawSplashLines();
+            animationFrame = requestAnimationFrame(animateSplash);
+        }
+
+        function startTypingAndTransition() {
+            // typing effect
+            const message = "Created by Asad Ahmad";
+            let charIndex = 0;
+            splashText.textContent = '';
+            typingInterval = setInterval(() => {
+                splashText.textContent += message[charIndex];
+                charIndex++;
+                if (charIndex >= message.length) {
+                    clearInterval(typingInterval);
+                    // wait a bit then transition
+                    setTimeout(() => {
+                        // fade out splash
+                        splash.classList.add('hidden');
+                        // show app
+                        appDiv.classList.add('visible');
+                        // stop animation loop
+                        if (animationFrame) cancelAnimationFrame(animationFrame);
+                        // draw static star in app logo canvas
+                        drawStaticStar();
+                    }, 800);
+                }
+            }, 100);
+        }
+
+        // Reset and start animation on load/resize
+        function restartSplashAnimation() {
+            // cancel previous
+            if (animationFrame) cancelAnimationFrame(animationFrame);
+            if (typingInterval) clearInterval(typingInterval);
+            // reset state
+            dotsVisible = 0;
+            linesVisible = 0;
+            lineProgress = 0;
+            isStarComplete = false;
+            splashText.textContent = '';
+            splash.classList.remove('hidden');
+            appDiv.classList.remove('visible');
+            
+            initSplashPoints();
+            
+            // start dot interval
+            let dotInterval = setInterval(() => {
+                dotsVisible++;
+                if (dotsVisible === 5) {
+                    clearInterval(dotInterval);
+                }
+            }, 300);
+            
+            animateSplash();
+        }
+
+        // Draw the completed star in the app header canvas (teal color)
+        function drawStaticStar() {
+            const appCanvas = document.getElementById('appLogoCanvas');
+            const ctxApp = appCanvas.getContext('2d');
+            const size = 200;
+            appCanvas.width = size; appCanvas.height = size;
+            const cx = size/2, cy = size/2, r = 60;
+            const pts = [];
+            for (let i = 0; i < 5; i++) {
+                let angle = (Math.PI * 2 / 5) * i - Math.PI / 2;
+                pts.push({ x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) });
+            }
+            ctxApp.clearRect(0, 0, size, size);
+            ctxApp.shadowBlur = 10;
+            ctxApp.shadowColor = "#0d9488";
+            ctxApp.fillStyle = "#0d9488";
+            pts.forEach(p => { ctxApp.beginPath(); ctxApp.arc(p.x, p.y, 5, 0, 2*Math.PI); ctxApp.fill(); });
+            ctxApp.strokeStyle = "#0d9488";
+            ctxApp.lineWidth = 3;
+            ctxApp.beginPath();
+            ctxApp.moveTo(pts[0].x, pts[0].y);
+            ctxApp.lineTo(pts[2].x, pts[2].y);
+            ctxApp.lineTo(pts[4].x, pts[4].y);
+            ctxApp.lineTo(pts[1].x, pts[1].y);
+            ctxApp.lineTo(pts[3].x, pts[3].y);
+            ctxApp.closePath();
+            ctxApp.stroke();
+        }
+
+        // Start splash on page load
+        restartSplashAnimation();
+        // If resize happens during splash, restart animation to adjust points
+        window.addEventListener('resize', () => {
+            if (!appDiv.classList.contains('visible')) {
+                restartSplashAnimation();
+            }
+        });
+
+        // ---------- ATTENDANCE APP LOGIC (unchanged) ----------
+        const PERIODS = [
+            { name: "Social Science", desc: "" },
+            { name: "Mathematics", desc: "" },
+            { name: "Tarjuma al-Quran", desc: "Translation" },
+            { name: "Qira'at & Insha", desc: "Reading & Composition" },
+            { name: "English / Hindi", desc: "Languages" },
+            { name: "Sharh Mi'at Amil", desc: "Grammar & Seerah" },
+            { name: "Taqwiyat & Sarf", desc: "Theology & Morphology" },
+            { name: "Arabic", desc: "Language" }
+        ];
+
+        let allData = {};
+        let currentStudent = '';
+        let currentDate = new Date().toISOString().slice(0,10);
+
+        const studentNameInput = document.getElementById('studentNameInput');
+        const loadNameBtn = document.getElementById('loadNameBtn');
+        const currentUserDisplay = document.getElementById('currentUserDisplay');
+        const dateInput = document.getElementById('attendanceDate');
+        const todayBtn = document.getElementById('todayBtn');
+        const loadDateBtn = document.getElementById('loadDateBtn');
+        const periodGrid = document.getElementById('periodGrid');
+        const saveBtn = document.getElementById('saveBtn');
+        const deleteDayBtn = document.getElementById('deleteDayBtn');
+        const subjectStatsDiv = document.getElementById('subjectStats');
+        const historyBody = document.getElementById('historyBody');
+        const exportBtn = document.getElementById('exportDataBtn');
+        const importBtn = document.getElementById('importDataBtn');
+        const importFile = document.getElementById('importFile');
+
+        function loadAllData() {
+            const saved = localStorage.getItem('jamia_attendance_all');
+            if (saved) {
+                try { allData = JSON.parse(saved) || {}; } catch(e) { allData = {}; }
+            }
+        }
+
+        function saveAllData() {
+            localStorage.setItem('jamia_attendance_all', JSON.stringify(allData));
+        }
+
+        function setCurrentStudent(name) {
+            currentStudent = name.trim();
+            if (currentStudent === '') {
+                currentUserDisplay.textContent = '';
+                studentNameInput.value = '';
+            } else {
+                currentUserDisplay.textContent = `📌 ${currentStudent}`;
+                studentNameInput.value = currentStudent;
+                if (!allData[currentStudent]) allData[currentStudent] = {};
+                saveAllData();
+            }
+            renderAll();
+        }
+
+        loadNameBtn.addEventListener('click', () => {
+            const newName = studentNameInput.value.trim();
+            if (!newName) { alert('Please enter a name.'); return; }
+            setCurrentStudent(newName);
+        });
+
+        studentNameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') loadNameBtn.click();
+        });
+
+        function setToday() {
+            currentDate = new Date().toISOString().slice(0,10);
+            dateInput.value = currentDate;
+            renderPeriodCheckboxes();
+        }
+        todayBtn.addEventListener('click', setToday);
+        loadDateBtn.addEventListener('click', () => {
+            currentDate = dateInput.value;
+            renderPeriodCheckboxes();
+        });
+        dateInput.addEventListener('change', () => {
+            currentDate = dateInput.value;
+            renderPeriodCheckboxes();
+        });
+
+        function getCurrentStudentRecordForDate(date) {
+            if (!currentStudent) return null;
+            if (!allData[currentStudent]) allData[currentStudent] = {};
+            return allData[currentStudent][date] || null;
+        }
+
+        function setCurrentStudentRecordForDate(date, periods) {
+            if (!currentStudent) return;
+            if (!allData[currentStudent]) allData[currentStudent] = {};
+            allData[currentStudent][date] = periods;
+            saveAllData();
+        }
+
+        function renderPeriodCheckboxes() {
+            if (!currentStudent) {
+                periodGrid.innerHTML = '<p style="grid-column:1/-1; text-align:center;">Enter your name above to begin.</p>';
+                return;
+            }
+            const record = getCurrentStudentRecordForDate(currentDate);
+            let html = '';
+            PERIODS.forEach((p, idx) => {
+                const isPresent = record ? record[idx] : true;
+                html += `<div class="period-card">
+                    <div class="period-name">${p.name}</div>
+                    <div class="period-desc">${p.desc || ' '}</div>
+                    <label><input type="checkbox" class="att-check" data-index="${idx}" ${isPresent ? 'checked' : ''}> Present</label>
+                </div>`;
+            });
+            periodGrid.innerHTML = html;
+        }
+
+        function getCurrentPeriodArray() {
+            const checkboxes = document.querySelectorAll('.att-check');
+            return Array.from(checkboxes).map(cb => cb.checked);
+        }
+
+        function calculateStats() {
+            if (!currentStudent) return [];
+            const records = allData[currentStudent] || {};
+            const dates = Object.keys(records);
+            const stats = PERIODS.map(p => ({ name: p.name, present: 0, total: 0 }));
+            dates.forEach(date => {
+                const rec = records[date];
+                if (!rec) return;
+                rec.forEach((present, idx) => {
+                    if (idx < stats.length) {
+                        stats[idx].total++;
+                        if (present) stats[idx].present++;
+                    }
+                });
+            });
+            return stats.map(s => {
+                const percent = s.total > 0 ? (s.present / s.total * 100) : 100;
+                return { ...s, percent: percent.toFixed(1), warning: percent < 85 && s.total > 0 };
+            });
+        }
+
+        function renderStats() {
+            if (!currentStudent) {
+                subjectStatsDiv.innerHTML = '<p>Enter your name to view your attendance stats.</p>';
+                return;
+            }
+            const stats = calculateStats();
+            if (stats.length === 0) {
+                subjectStatsDiv.innerHTML = '<p>No attendance data yet.</p>';
+                return;
+            }
+            let html = '';
+            stats.forEach(s => {
+                html += `<div class="subject-row">
+                    <span>${s.name}</span>
+                    <span style="display:flex; gap:12px;">
+                        <span>${s.present}/${s.total} (${s.percent}%)</span>
+                        ${s.warning ? '<span class="warning-pill">⚠️ Below 85%</span>' : ''}
+                    </span>
+                </div>`;
+            });
+            subjectStatsDiv.innerHTML = html;
+        }
+
+        function renderHistory() {
+            if (!currentStudent) {
+                historyBody.innerHTML = '<tr><td colspan="3">Enter your name to see history.</td></tr>';
+                return;
+            }
+            const records = allData[currentStudent] || {};
+            const dates = Object.keys(records).sort().reverse().slice(0, 15);
+            let html = '';
+            dates.forEach(date => {
+                const rec = records[date];
+                const absent = rec.reduce((acc, present, i) => present ? acc : [...acc, i+1], []);
+                const absentStr = absent.length ? absent.join(', ') + ' period(s)' : 'None';
+                html += `<tr>
+                    <td>${date}</td>
+                    <td>${absentStr}</td>
+                    <td><button class="load-history-btn secondary" data-date="${date}" style="padding:4px 12px;">Load</button></td>
+                </tr>`;
+            });
+            if (!dates.length) html = '<tr><td colspan="3">No records yet.</td></tr>';
+            historyBody.innerHTML = html;
+            document.querySelectorAll('.load-history-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    currentDate = e.target.dataset.date;
+                    dateInput.value = currentDate;
+                    renderPeriodCheckboxes();
+                });
+            });
+        }
+
+        saveBtn.addEventListener('click', () => {
+            if (!currentStudent) { alert('Please enter your name first.'); return; }
+            setCurrentStudentRecordForDate(currentDate, getCurrentPeriodArray());
+            renderAll();
+            alert(`Attendance saved for ${currentStudent} on ${currentDate}.`);
+        });
+
+        deleteDayBtn.addEventListener('click', () => {
+            if (!currentStudent) return;
+            if (!confirm(`Delete attendance for ${currentStudent} on ${currentDate}?`)) return;
+            if (allData[currentStudent] && allData[currentStudent][currentDate]) {
+                delete allData[currentStudent][currentDate];
+                saveAllData();
+            }
+            renderAll();
+        });
+
+        exportBtn.addEventListener('click', () => {
+            const exportObj = {
+                allData,
+                exportedAt: new Date().toISOString(),
+                institution: "Jamia Salafiya Varanasi · Mutawassita Year 3",
+                maintainedBy: "Asad Ahmad (_a4asd__)",
+                note: "Official individual attendance record."
+            };
+            const blob = new Blob([JSON.stringify(exportObj, null, 2)], {type: 'application/json'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `Jamia_Attendance_${currentStudent || 'backup'}_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+        });
+
+        importBtn.addEventListener('click', () => importFile.click());
+        importFile.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                try {
+                    const imported = JSON.parse(ev.target.result);
+                    if (imported.allData) {
+                        allData = imported.allData;
+                        saveAllData();
+                        renderAll();
+                        alert('Data imported successfully.');
+                    } else { alert('Invalid backup file.'); }
+                } catch(ex) { alert('Error reading file.'); }
+                importFile.value = '';
+            };
+            reader.readAsText(file);
+        });
+
+        function renderAll() {
+            renderPeriodCheckboxes();
+            renderStats();
+            renderHistory();
+        }
+
+        // Initialize attendance
+        loadAllData();
+        dateInput.value = currentDate;
+        currentStudent = '';
+        currentUserDisplay.textContent = '';
+        studentNameInput.value = '';
+        renderAll();
+
+        // Draw static star once app logo canvas is ready
+        // but wait until splash transition completes, we call drawStaticStar() there.
+    })();
+</script>
+</body>
+</html>
+    
+  </body>
+  
+</html>
